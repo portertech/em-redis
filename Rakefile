@@ -14,10 +14,10 @@ require 'em-redis'
 task :default => ['redis:test']
 
 Bones {
-  name 'em-redis'
-  authors ['Jonathan Broad', 'Eugene Pimenov']
-  email 'libc@me.com'
-  url 'http://github.com/libc/em-redis'
+  name 'em-redis-unified'
+  authors ['Jonathan Broad', 'Eugene Pimenov', 'Sean Porter']
+  email 'portertech@gmail.com'
+  url 'http://github.com/portertech/em-redis'
   summary 'An eventmachine-based implementation of the Redis protocol'
   description summary
   version EMRedis::VERSION
