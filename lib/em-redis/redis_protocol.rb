@@ -42,10 +42,13 @@ module EventMachine
         "hgetall"   => lambda{|r| Hash[*r]},
         "info"      => lambda{|r|
           info = {}
-          r.each_line {|kv|
-            k,v = kv.split(":",2).map{|x| x.chomp}
-            info[k.to_sym] = v
-          }
+          r.each_line do |line|
+            line.chomp!
+            unless line.empty?
+              k, v = line.split(":", 2)
+              info[k.to_sym] = v
+            end
+          end
           info
         }
       }
