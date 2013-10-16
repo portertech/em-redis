@@ -351,27 +351,26 @@ module EventMachine
           :after  => lambda{}
         }
         @values = []
-
-        # These commands should be first
-        auth_and_select_db
       end
 
       def auth_and_select_db
+        # auth and select go to the front of the line
+        callbacks = @callbacks
+        @callbacks = []
         call_command(["auth", @password]) if @password
         call_command(["select", @db]) unless @db == 0
+        callbacks.each { |block| callback &block }
       end
       private :auth_and_select_db
 
       def connection_completed
         @logger.debug { "Connected to #{@host}:#{@port}" } if @logger
-
         @reconnect_callbacks[:after].call if @reconnecting
-
         @redis_callbacks = []
         @multibulk_n     = false
         @reconnecting    = false
         @connected       = true
-
+        auth_and_select_db
         succeed
       end
 
@@ -493,7 +492,6 @@ module EventMachine
           EM.add_timer(1) do
             @logger.debug { "Reconnecting to #{@host}:#{@port}" } if @logger
             reconnect @host, @port
-            auth_and_select_db
           end
         elsif @connected
           error ConnectionError, 'connection closed'
