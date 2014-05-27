@@ -479,7 +479,7 @@ module EventMachine
 
       def close
         @closing = true
-        close_after_writing
+        close_connection_after_writing
       end
 
       def unbind
