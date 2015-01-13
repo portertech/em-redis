@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-require File.join(File.dirname(__FILE__), 'lib', 'em-redis-unified', 'constants')
+require File.join(File.dirname(__FILE__), 'lib', 'em-redis', 'constants')
 
 Gem::Specification.new do |s|
   s.name        = 'em-redis-unified'
