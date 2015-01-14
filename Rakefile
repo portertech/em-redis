@@ -1,14 +1,5 @@
 require 'bundler/gem_tasks'
 
-begin
-  require 'bones'
-rescue LoadError
-  abort '### Please install the "bones" gem ###'
-end
-
-ensure_in_path 'lib'
-require 'em-redis'
-
 task :default => ['redis:test']
 
 namespace :redis do
