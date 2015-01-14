@@ -353,7 +353,7 @@ module EventMachine
             connect_to_sentinel(options, &callback)
           else
             connection = EM.connect options[:host], options[:port], self, options
-            callback.call(connection) if &callback
+            callback.call(connection) if callback
             connection
           end
         end
