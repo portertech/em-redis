@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency('rake', '~> 10.3')
   s.add_development_dependency('bacon')
   s.add_development_dependency('em-spec')
+  s.add_development_dependency('rspec', '~> 3.1.0')
 
   s.files         = Dir.glob('{bin,lib}/**/*') + %w[em-redis-unified.gemspec README.md CHANGELOG.md MIT-LICENSE.txt]
   s.executables   = Dir.glob('bin/**/*').map { |file| File.basename(file) }
