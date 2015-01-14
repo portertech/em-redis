@@ -314,7 +314,24 @@ module EventMachine
           end
         end
 
-        def connect(*args)
+        def connect_to_sentinel(options, &callback)
+          if options[:sentinels].is_a?(Array)
+            connection = nil
+            options[:sentinels].each do |sentinel|
+              if sentinel.is_a?(Hash)
+                sentinel[:host] ||= '127.0.0.1'
+                sentinel[:port]   = (options[:port] || 26379).to_i
+                connection = EM.connect sentinel[:host], sentinel[:port], self, options
+              else
+                error ArgumentError, 'a sentinel must be a Hash'
+              end
+            end
+          else
+            error ArgumentError, 'sentinels must be an Array'
+          end
+        end
+
+        def connect(*args, &callback)
           case args.length
           when 0
             options = {}
@@ -332,7 +349,13 @@ module EventMachine
           end
           options[:host] ||= '127.0.0.1'
           options[:port]   = (options[:port] || 6379).to_i
-          EM.connect options[:host], options[:port], self, options
+          if options.has_key?(:sentinels)
+            connect_to_sentinel(options, &callback)
+          else
+            connection = EM.connect options[:host], options[:port], self, options
+            callback.call(connection) if &callback
+            connection
+          end
         end
       end
 
@@ -341,8 +364,10 @@ module EventMachine
         @port           = options[:port]
         @db             = (options[:db] || 0).to_i
         @password       = options[:password]
-        @auto_reconnect = options[:auto_reconnect] || true
+        @auto_reconnect = options[:auto_reconnect].nil? ? true : options[:auto_reconnect]
         @logger         = options[:logger]
+        @sentinels      = options[:sentinels]
+
         @error_callback = lambda do |err|
           raise err
         end
