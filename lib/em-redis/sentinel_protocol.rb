@@ -231,7 +231,7 @@ module EventMachine
         argv[0] = argv[0].to_s unless argv[0].kind_of? String
         argv[0] = argv[0].downcase
         send_command(argv)
-        @redis_callbacks << [REPLY_PROCESSOR[argv[0]], blk]
+        @sentinel_callbacks << [REPLY_PROCESSOR[argv[0]], blk]
       end
 
       def call_commands(argvs, &blk)
@@ -251,7 +251,7 @@ module EventMachine
         # FIXME: argvs may contain heterogenous commands, storing all
         # REPLY_PROCESSORs may turn out expensive and has been omitted
         # for now.
-        @redis_callbacks << [nil, argvs.length, blk]
+        @sentinel_callbacks << [nil, argvs.length, blk]
       end
 
       def send_command(argv)
@@ -286,7 +286,7 @@ module EventMachine
       class ProtocolError < StandardError; end
       class ConnectionError < StandardError; end
 
-      class RedisError < StandardError
+      class SentinelError < StandardError
         attr_accessor :code
 
         def initialize(*args)
@@ -309,7 +309,7 @@ module EventMachine
               :password => uri.password
             }
           rescue
-            error ArgumentError, 'invalid redis url'
+            error ArgumentError, 'invalid sentinel url'
           end
         end
 
@@ -364,7 +364,7 @@ module EventMachine
       def connection_completed
         @logger.debug { "Connected to #{@host}:#{@port}" } if @logger
         @reconnect_callbacks[:after].call if @reconnecting
-        @redis_callbacks = []
+        @sentinel_callbacks = []
         @multibulk_n     = false
         @reconnecting    = false
         @connected       = true
@@ -431,8 +431,8 @@ module EventMachine
       end
 
       def dispatch_error(code)
-        @redis_callbacks.shift
-        error RedisError, code
+        @sentinel_callbacks.shift
+        error SentinelError, code
       end
 
       def dispatch_response(value)
@@ -448,7 +448,7 @@ module EventMachine
           end
         end
 
-        callback = @redis_callbacks.shift
+        callback = @sentinel_callbacks.shift
         if callback.kind_of?(Array) && callback.length == 2
           processor, blk = callback
           value = processor.call(value) if processor
@@ -458,7 +458,7 @@ module EventMachine
           value = processor.call(value) if processor
           @values << value
           if pipeline_count > 1
-            @redis_callbacks.unshift [processor, pipeline_count - 1, blk]
+            @sentinel_callbacks.unshift [processor, pipeline_count - 1, blk]
           else
             blk.call(@values) if blk
             @values = []
@@ -494,7 +494,7 @@ module EventMachine
         elsif @connected
           error ConnectionError, 'connection closed'
         else
-          error ConnectionError, 'unable to connect to redis server'
+          error ConnectionError, 'unable to connect to sentinel server'
         end
         @connected = false
         @deferred_status = nil
