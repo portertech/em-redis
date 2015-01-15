@@ -9,15 +9,15 @@ describe 'EM::Protocols::RedisSentinel' do
     [
       {
         :host => '127.0.0.1',
-        :port => 26387
+        :port => 26379
       },
       {
         :host => '127.0.0.1',
-        :port => 26388
+        :port => 26380
       },
       {
         :host => '127.0.0.1',
-        :port => 26389
+        :port => 26381
       }
     ]
   end
@@ -36,8 +36,8 @@ describe 'EM::Protocols::RedisSentinel' do
   it 'successfully connects to redis with sentinels' do
     async_wrapper do
       EM::Protocols::Redis.connect(:db => 14, :sentinels => sentinels) do |redis|
-        redis.flushdb do
-          expect(redis.connected?).to eq(true)
+        redis.masters do |masters|
+          expect(masters).to eq('poop')
           async_done
         end
       end

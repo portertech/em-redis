@@ -1,10 +1,9 @@
 require 'rubygems'
 require 'eventmachine'
-require 'uri'
 
 module EventMachine
   module Protocols
-    module Redis
+    module RedisSentinel
       include EM::Deferrable
 
       ##
@@ -314,30 +313,23 @@ module EventMachine
           end
         end
 
-        def connect(*args, &callback)
-          case args.length
-          when 0
-            options = {}
-          when 1
-            arg = args.shift
-            case arg
-            when Hash then options = arg
-            when String then options = parse_url(arg)
-            else error ArgumentError, 'first argument must be Hash or String'
+        def connect(options, &callback)
+          if options[:sentinels].is_a?(Array)
+            connection = nil
+            options[:sentinels].each do |sentinel|
+              if sentinel.is_a?(Hash)
+                sentinel[:host] ||= '127.0.0.1'
+                sentinel[:port]   = (options[:port] || 26379).to_i
+                EM.connect(sentinel[:host], sentinel[:port], self, options) do |sentinel_connection|
+                  callback.call(sentinel_connection)
+                end
+                true
+              else
+                error ArgumentError, 'a sentinel must be a Hash'
+              end
             end
-          when 2
-            options = {:host => args[1], :port => args[2]}
           else
-            error ArgumentError, "wrong number of arguments (#{args.length} for 1)"
-          end
-          options[:host] ||= '127.0.0.1'
-          options[:port]   = (options[:port] || 6379).to_i
-          if options.has_key?(:sentinels)
-            EM::Protocols::RedisSentinel.connect(options, &callback)
-          else
-            connection = EM.connect options[:host], options[:port], self, options
-            callback.call(connection) if callback
-            connection
+            error ArgumentError, 'sentinels must be an Array'
           end
         end
       end
