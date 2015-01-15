@@ -242,7 +242,10 @@ module EventMachine
                 sentinel[:port]   = (sentinel[:port] || 26379).to_i
                 # connect(server, port = nil, handler = nil, *args, &block)
                 EM.connect(sentinel[:host], sentinel[:port], self) do |sentinel_connection|
-                  callback.call(sentinel_connection) if callback
+                  sentinel_connection.sentinel_get_master_addr_by_name('sentinel_mycluster') do |master|
+                    redis_connection = EM.connect(master[0], master[1], EM::Protocols::Redis)
+                    callback.call(redis_connection) if callback
+                  end
                 end
                 true
               else
