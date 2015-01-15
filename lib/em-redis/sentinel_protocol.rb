@@ -54,82 +54,7 @@ module EventMachine
       }
 
       ALIASES = {
-        "flush_db"             => "flushdb",
-        "flush_all"            => "flushall",
-        "last_save"            => "lastsave",
-        "key?"                 => "exists",
-        "delete"               => "del",
-        "randkey"              => "randomkey",
-        "list_length"          => "llen",
-        "push_tail"            => "rpush",
-        "push_head"            => "lpush",
-        "pop_tail"             => "rpop",
-        "pop_head"             => "lpop",
-        "list_set"             => "lset",
-        "list_range"           => "lrange",
-        "list_trim"            => "ltrim",
-        "list_index"           => "lindex",
-        "list_rm"              => "lrem",
-        "set_add"              => "sadd",
-        "set_delete"           => "srem",
-        "set_count"            => "scard",
-        "set_member?"          => "sismember",
-        "set_members"          => "smembers",
-        "set_intersect"        => "sinter",
-        "set_intersect_store"  => "sinterstore",
-        "set_inter_store"      => "sinterstore",
-        "set_union"            => "sunion",
-        "set_union_store"      => "sunionstore",
-        "set_diff"             => "sdiff",
-        "set_diff_store"       => "sdiffstore",
-        "set_move"             => "smove",
-        "set_unless_exists"    => "setnx",
-        "rename_unless_exists" => "renamenx",
-        "type?"                => "type",
-        "zset_add"             => "zadd",
-        "zset_count"           => "zcard",
-        "zset_range_by_score"  => "zrangebyscore",
-        "zset_reverse_range"   => "zrevrange",
-        "zset_range"           => "zrange",
-        "zset_delete"          => "zrem",
-        "zset_score"           => "zscore",
-        "zset_incr_by"         => "zincrby",
-        "zset_increment_by"    => "zincrby",
-        "background_save"      => 'bgsave',
-        "async_save"           => 'bgsave',
-        "members"              => 'smembers',
-        "decrement_by"         => "decrby",
-        "decrement"            => "decr",
-        "increment_by"         => "incrby",
-        "increment"            => "incr",
-        "set_if_nil"           => "setnx",
-        "multi_get"            => "mget",
-        "random_key"           => "randomkey",
-        "random"               => "randomkey",
-        "rename_if_nil"        => "renamenx",
-        "tail_pop"             => "rpop",
-        "pop"                  => "rpop",
-        "head_pop"             => "lpop",
-        "shift"                => "lpop",
-        "list_remove"          => "lrem",
-        "index"                => "lindex",
-        "trim"                 => "ltrim",
-        "list_range"           => "lrange",
-        "range"                => "lrange",
-        "list_len"             => "llen",
-        "len"                  => "llen",
-        "head_push"            => "lpush",
-        "unshift"              => "lpush",
-        "tail_push"            => "rpush",
-        "push"                 => "rpush",
-        "add"                  => "sadd",
-        "set_remove"           => "srem",
-        "set_size"             => "scard",
-        "member?"              => "sismember",
-        "intersect"            => "sinter",
-        "intersect_and_store"  => "sinterstore",
-        "members"              => "smembers",
-        "exists?"              => "exists"
+        # 'alias' => 'command'
       }
 
       DISABLED_COMMANDS = {
@@ -137,63 +62,59 @@ module EventMachine
         "sync"    => true
       }
 
-      def []=(key,value)
-        set(key,value)
-      end
-
-      def set(key, value, expiry=nil)
-        call_command(["set", key, value]) do |s|
-          yield s if block_given?
-        end
-        expire(key, expiry) if expiry
-      end
-
-      def sort(key, options={}, &blk)
-        cmd = ["sort", key]
-        cmd << ["by", options[:by]] if options[:by]
-        Array(options[:get]).each do |v|
-          cmd << ["get", v]
-        end
-        cmd << options[:order].split(" ") if options[:order]
-        cmd << ["limit", options[:limit]] if options[:limit]
-        cmd << ["store", options[:store]] if options[:store]
-        call_command(cmd.flatten, &blk)
-      end
-
-      def incr(key, increment = nil, &blk)
-        call_command(increment ? ["incrby",key,increment] : ["incr",key], &blk)
-      end
-
-      def decr(key, decrement = nil, &blk)
-        call_command(decrement ? ["decrby",key,decrement] : ["decr",key], &blk)
+      def ping(&blk)
+        call_command(['ping'], &blk)
       end
 
       def sentinel_masters(&blk)
-        call_command(['SENTINEL', 'masters'], &blk)
+        call_command(['sentinel', 'masters'], &blk)
+      end
+
+      def sentinel_master(master, &blk)
+        call_command(['sentinel', 'master', master], &blk)
+      end
+
+      def sentinel_slaves(master, &blk)
+        call_command(['sentinel', 'slaves', master], &blk)
+      end
+
+      def sentinel_get_master_addr_by_name(master, &blk)
+        call_command(['sentinel', 'get-master-addr-by-name', master], &blk)
+      end
+
+      def sentinel_reset(pattern)
+        call_command(['sentinel', 'reset', pattern]) do |blk|
+          yield blk if block_given?
+        end
+      end
+
+      def sentinel_failover(master)
+        call_command(['sentinel', 'failover', master]) do |blk|
+          yield blk if block_given?
+        end
+      end
+
+      def sentinel_monitor(name, ip, port, quorum)
+        call_command(['sentinel', 'monitor', name, ip, port, quorum]) do |blk|
+          yield blk if block_given?
+        end
+      end
+
+      def sentinel_remove(name)
+        call_command(['sentinel', 'remove', name]) do |blk|
+          yield blk if block_given?
+        end
+      end
+
+      def sentinel_set(name, option, value)
+        call_command(['sentinel', 'set', name, option, value]) do |blk|
+          yield blk if block_given?
+        end
       end
 
       def auth(password, &blk)
         @password = password
         call_command(['auth', password], &blk)
-      end
-
-      # Similar to memcache.rb's #get_multi, returns a hash mapping
-      # keys to values.
-      def mapped_mget(*keys)
-        mget(*keys) do |response|
-          result = {}
-          response.each do |value|
-            key = keys.shift
-            result.merge!(key => value) unless value.nil?
-          end
-          yield result if block_given?
-        end
-      end
-
-      # Ruby defines a now deprecated type method so we need to override it here
-      # since it will never hit method_missing
-      def type(key, &blk)
-        call_command(['type', key], &blk)
       end
 
       def quit(&blk)
