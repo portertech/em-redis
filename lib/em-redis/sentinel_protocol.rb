@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'eventmachine'
+require 'uri'
 
 module EventMachine
   module Protocols
@@ -167,9 +168,8 @@ module EventMachine
         call_command(decrement ? ["decrby",key,decrement] : ["decr",key], &blk)
       end
 
-      def select(db, &blk)
-        @db = db.to_i
-        call_command(['select', @db], &blk)
+      def sentinel_masters(&blk)
+        call_command(['SENTINEL', 'masters'], &blk)
       end
 
       def auth(password, &blk)
@@ -290,7 +290,7 @@ module EventMachine
         attr_accessor :code
 
         def initialize(*args)
-          args[0] = "Redis server returned error code: #{args[0]}"
+          args[0] = "Sentinel server returned error code: #{args[0]}"
           super
         end
       end
@@ -315,13 +315,13 @@ module EventMachine
 
         def connect(options, &callback)
           if options[:sentinels].is_a?(Array)
-            connection = nil
             options[:sentinels].each do |sentinel|
               if sentinel.is_a?(Hash)
                 sentinel[:host] ||= '127.0.0.1'
-                sentinel[:port]   = (options[:port] || 26379).to_i
-                EM.connect(sentinel[:host], sentinel[:port], self, options) do |sentinel_connection|
-                  callback.call(sentinel_connection)
+                sentinel[:port]   = (sentinel[:port] || 26379).to_i
+                # connect(server, port = nil, handler = nil, *args, &block)
+                EM.connect(sentinel[:host], sentinel[:port], self) do |sentinel_connection|
+                  callback.call(sentinel_connection) if callback
                 end
                 true
               else
@@ -337,7 +337,6 @@ module EventMachine
       def initialize(options = {})
         @host           = options[:host]
         @port           = options[:port]
-        @db             = (options[:db] || 0).to_i
         @password       = options[:password]
         @auto_reconnect = options[:auto_reconnect].nil? ? true : options[:auto_reconnect]
         @logger         = options[:logger]
@@ -353,15 +352,14 @@ module EventMachine
         @values = []
       end
 
-      def auth_and_select_db
-        # auth and select go to the front of the line
+      def auth
+        # auth goes to the front of the line
         callbacks = @callbacks
         @callbacks = []
         call_command(["auth", @password]) if @password
-        call_command(["select", @db]) unless @db == 0
         callbacks.each { |block| callback &block }
       end
-      private :auth_and_select_db
+      private :auth
 
       def connection_completed
         @logger.debug { "Connected to #{@host}:#{@port}" } if @logger
@@ -370,7 +368,7 @@ module EventMachine
         @multibulk_n     = false
         @reconnecting    = false
         @connected       = true
-        auth_and_select_db
+        auth
         succeed
       end
 
