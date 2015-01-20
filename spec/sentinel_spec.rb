@@ -61,7 +61,7 @@ describe 'EM::Protocols::RedisSentinel' do
 
   it 'successfully connects if sentinels are defined as a string' do
     async_wrapper do
-      EM::Protocols::Redis.connect(:sentinels => sentinels_hash) do |redis|
+      EM::Protocols::Redis.connect(:sentinels => sentinels_strings) do |redis|
         redis.flushdb do
           expect(redis.connected?).to eq(true)
           async_done

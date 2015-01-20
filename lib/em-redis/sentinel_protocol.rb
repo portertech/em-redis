@@ -95,20 +95,27 @@ module EventMachine
 
         def connect(options, &callback)
           if options[:sentinels].is_a?(Array)
-            options[:sentinels].each do |sentinel|
-              if sentinel.is_a?(Hash)
-                sentinel[:host] ||= '127.0.0.1'
-                sentinel[:port]   = (sentinel[:port] || 26379).to_i
-                EM.connect(sentinel[:host], sentinel[:port], self) do |sentinel_connection|
-                  sentinel_connection.sentinel_get_master_addr_by_name('sentinel_mycluster') do |master|
-                    redis_connection = EM.connect(master[0], master[1], self)
-                    callback.call(redis_connection) if callback
-                  end
-                end
-                true
+            options[:sentinels].each do |sentinel_options|
+              sentinel = nil
+              if sentinel_options.is_a?(String)
+                sentinel = parse_url(sentinel_options)
+              elsif sentinel_options.is_a?(Hash)
+                sentinel = sentinel_options
               else
-                raise TypeError.new('a sentinel must be a Hash')
+                raise TypeError.new('a sentinel must be a Hash or String')
               end
+
+              sentinel[:host] ||= '127.0.0.1'
+              sentinel[:port]   = (sentinel[:port] || 26379).to_i
+
+              EM.connect(sentinel[:host], sentinel[:port], self) do |sentinel_connection|
+                sentinel_connection.sentinel_get_master_addr_by_name('sentinel_mycluster') do |master|
+                  redis_connection = EM.connect(master[0], master[1], self)
+                  callback.call(redis_connection) if callback
+                end
+              end
+
+              true
             end
           else
             raise TypeError.new('sentinels must be an Array')
