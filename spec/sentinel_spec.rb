@@ -72,11 +72,11 @@ describe 'EM::Protocols::RedisSentinel' do
 
   it 'unsuccessfully connects if sentinels are not in an array' do
     async_wrapper do
-      EM::Protocols::Redis.connect(:sentinels => sentinels_hash) do |redis|
-        redis.flushdb do
-          expect(redis.connected?).to eq(true)
-          async_done
+      begin
+        EM::Protocols::Redis.connect(:sentinels => sentinels_hash) do |redis|
         end
+      rescue TypeError => e
+        async_done
       end
     end
   end
