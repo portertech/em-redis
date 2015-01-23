@@ -37,16 +37,16 @@ describe 'EM::Protocols::RedisSentinel' do
     ]
   end
 
-  it 'successfully connects to redis' do
-    async_wrapper do
-      EM::Protocols::Redis.connect(:db => 14) do |redis|
-        redis.flushdb do
-          expect(redis.connected?).to eq(true)
-          async_done
-        end
-      end
-    end
-  end
+  # it 'successfully connects to redis' do
+  #   async_wrapper do
+  #     EM::Protocols::Redis.connect(:db => 14) do |redis|
+  #       redis.flushdb do
+  #         expect(redis.connected?).to eq(true)
+  #         async_done
+  #       end
+  #     end
+  #   end
+  # end
 
   it 'successfully connects to redis with sentinels' do
     async_wrapper do
