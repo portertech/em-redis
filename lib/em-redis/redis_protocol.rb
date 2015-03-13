@@ -337,12 +337,13 @@ module EventMachine
       end
 
       def initialize(options = {})
-        @host           = options[:host]
-        @port           = options[:port]
-        @db             = (options[:db] || 0).to_i
-        @password       = options[:password]
-        @auto_reconnect = options[:auto_reconnect] || true
-        @logger         = options[:logger]
+        @host               = options[:host]
+        @port               = options[:port]
+        @db                 = (options[:db] || 0).to_i
+        @password           = options[:password]
+        @auto_reconnect     = options.fetch(:auto_reconnect, true)
+        @reconnect_on_error = options.fetch(:reconnect_on_error, false)
+        @logger             = options[:logger]
         @error_callback = lambda do |err|
           raise err
         end
@@ -486,7 +487,7 @@ module EventMachine
         @logger.debug { "Disconnected" } if @logger
         if @closing
           @reconnecting = false
-        elsif (@connected || @reconnecting) && @auto_reconnect
+        elsif ((@connected || @reconnecting) && @auto_reconnect) || @reconnect_on_error
           @reconnect_callbacks[:before].call if @connected
           @reconnecting = true
           EM.add_timer(1) do
