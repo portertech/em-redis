@@ -488,7 +488,7 @@ module EventMachine
         if @closing
           @reconnecting = false
         elsif ((@connected || @reconnecting) && @auto_reconnect) || @reconnect_on_error
-          @reconnect_callbacks[:before].call if @connected
+          @reconnect_callbacks[:before].call unless @reconnecting
           @reconnecting = true
           EM.add_timer(1) do
             @logger.debug { "Reconnecting to #{@host}:#{@port}" } if @logger
