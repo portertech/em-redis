@@ -11,7 +11,7 @@ module EventMachine
       # constants
       #########################
 
-      OK      = "OK".freeze
+      OK       = "OK".freeze
       MINUS    = "-".freeze
       PLUS     = "+".freeze
       COLON    = ":".freeze
@@ -191,6 +191,26 @@ module EventMachine
         end
       end
 
+      def subscribe(channel, proc=nil, &blk)
+        @subscribe_callbacks ||= Hash.new([])
+        @subscribe_callbacks[channel] += [(proc || blk)]
+        call_command(['subscribe', channel], &blk)
+      end
+
+      def unsubscribe(channel=nil, &blk)
+        @subscribe_callbacks ||= Hash.new([])
+        argv = ["unsubscribe"]
+        if channel
+          argv << channel
+          @subscribe_callbacks[channel] = [blk]
+        else
+          @subscribe_callbacks.each_key do |key|
+            @subscribe_callbacks[key] = [blk]
+          end
+        end
+        callback { send_command(argv) }
+      end
+
       # Ruby defines a now deprecated type method so we need to override it here
       # since it will never hit method_missing
       def type(key, &blk)
@@ -356,7 +376,7 @@ module EventMachine
 
       def auth_and_select_db
         # auth and select go to the front of the line
-        callbacks = @callbacks
+        callbacks = @callbacks || []
         @callbacks = []
         call_command(["auth", @password]) if @password
         call_command(["select", @db]) unless @db == 0
@@ -447,6 +467,15 @@ module EventMachine
             value = @multibulk_values
             @multibulk_n = false
           else
+            return
+          end
+        end
+
+        if @subscribe_callbacks && value.is_a?(Array)
+          if %w[message unsubscribe].include?(value[0])
+            @subscribe_callbacks[value[1]].each do |blk|
+              blk.call(*value)
+            end
             return
           end
         end
