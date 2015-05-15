@@ -47,5 +47,4 @@ EM.describe EM::Protocols::Redis, "connected to an empty db" do
       end
     end
   end
-
 end

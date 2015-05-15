@@ -201,8 +201,8 @@ module EventMachine
         @subscribe_callbacks ||= Hash.new([])
         argv = ["unsubscribe"]
         if channel
-          argv << channel
           @subscribe_callbacks[channel] = [blk]
+          argv << channel
         else
           @subscribe_callbacks.each_key do |key|
             @subscribe_callbacks[key] = [blk]
