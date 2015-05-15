@@ -1,6 +1,6 @@
 # coding: utf-8
 $:.unshift File.expand_path("../lib", __FILE__)
-require "em-redis"
+require "em-redis/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "em-redis-unified"
@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency("eventmachine", ">=0.12.10")
+  spec.add_dependency("eventmachine", ">= 0.12.10")
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake"

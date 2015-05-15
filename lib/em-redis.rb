@@ -1,8 +1,6 @@
+require 'em-redis/version'
 
 module EMRedis
-
-  # :stopdoc:
-  VERSION = '0.6.0'
   LIBPATH = ::File.expand_path(::File.dirname(__FILE__)) + ::File::SEPARATOR
   PATH = ::File.dirname(LIBPATH) + ::File::SEPARATOR
   # :startdoc:
