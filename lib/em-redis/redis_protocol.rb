@@ -474,7 +474,7 @@ module EventMachine
         if @subscribe_callbacks && value.is_a?(Array)
           if %w[message unsubscribe].include?(value[0])
             @subscribe_callbacks[value[1]].each do |blk|
-              blk.call(*value)
+              blk.call(*value) if blk
             end
             return
           end
