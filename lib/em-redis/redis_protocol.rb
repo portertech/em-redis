@@ -232,6 +232,10 @@ module EventMachine
         @error_callback.call(err)
       end
 
+      def on_connect(&blk)
+        @on_connect_callback = blk
+      end
+
       def before_reconnect(&blk)
         @reconnect_callbacks[:before] = blk
       end
@@ -367,6 +371,7 @@ module EventMachine
         @error_callback = lambda do |err|
           raise err
         end
+        @on_connect_callback = lambda{}
         @reconnect_callbacks = {
           :before => lambda{},
           :after  => lambda{}
@@ -386,12 +391,13 @@ module EventMachine
 
       def connection_completed
         @logger.debug { "Connected to #{@host}:#{@port}" } if @logger
-        @reconnect_callbacks[:after].call if @reconnecting
         @redis_callbacks = []
         @multibulk_n     = false
-        @reconnecting    = false
-        @connected       = true
         auth_and_select_db
+        @reconnect_callbacks[:after].call if @reconnecting
+        @on_connect_callback.call
+        @reconnecting = false
+        @connected    = true
         succeed
       end
 
