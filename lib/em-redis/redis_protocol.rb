@@ -507,6 +507,10 @@ module EventMachine
         @connected || false
       end
 
+      def reconnect!
+        reconnect(@host, @port)
+      end
+
       def close
         @closing = true
         close_connection_after_writing
@@ -521,7 +525,7 @@ module EventMachine
           @reconnecting = true
           EM.add_timer(1) do
             @logger.debug { "Reconnecting to #{@host}:#{@port}" } if @logger
-            reconnect @host, @port
+            reconnect!
           end
         elsif @connected
           error ConnectionError, 'connection closed'
