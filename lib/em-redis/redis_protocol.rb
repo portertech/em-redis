@@ -508,7 +508,12 @@ module EventMachine
       end
 
       def reconnect!
-        reconnect(@host, @port)
+        @reconnect_callbacks[:before].call unless @reconnecting
+        @reconnecting = true
+        EM.add_timer(1) do
+          @logger.debug { "Reconnecting to #{@host}:#{@port}" } if @logger
+          reconnect(@host, @port)
+        end
       end
 
       def close
@@ -521,12 +526,7 @@ module EventMachine
         if @closing
           @reconnecting = false
         elsif ((@connected || @reconnecting) && @auto_reconnect) || @reconnect_on_error
-          @reconnect_callbacks[:before].call unless @reconnecting
-          @reconnecting = true
-          EM.add_timer(1) do
-            @logger.debug { "Reconnecting to #{@host}:#{@port}" } if @logger
-            reconnect!
-          end
+          reconnect!
         elsif @connected
           error ConnectionError, 'connection closed'
         else
