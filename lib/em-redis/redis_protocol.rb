@@ -7,6 +7,8 @@ module EventMachine
     module Redis
       include EM::Deferrable
 
+      attr_accessor :auto_reconnect, :reconnect_on_error
+
       ##
       # constants
       #########################
@@ -321,8 +323,6 @@ module EventMachine
       #########################
 
       class << self
-        attr_accessor :auto_reconnect, :reconnect_on_error
-
         def parse_url(url)
           begin
             uri = URI.parse(url)
