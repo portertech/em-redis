@@ -232,10 +232,6 @@ module EventMachine
         @error_callback.call(err)
       end
 
-      def auto_reconnect(enabled)
-        @auto_reconnect = !!enabled
-      end
-
       def before_reconnect(&blk)
         @reconnect_callbacks[:before] = blk
       end
@@ -325,6 +321,8 @@ module EventMachine
       #########################
 
       class << self
+        attr_accessor :auto_reconnect, :reconnect_on_error
+
         def parse_url(url)
           begin
             uri = URI.parse(url)

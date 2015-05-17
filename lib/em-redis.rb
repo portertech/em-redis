@@ -1,4 +1,4 @@
-require 'em-redis/version'
+require File.join(File.dirname(__FILE__), 'em-redis/version')
 
 module EMRedis
   LIBPATH = ::File.expand_path(::File.dirname(__FILE__)) + ::File::SEPARATOR
