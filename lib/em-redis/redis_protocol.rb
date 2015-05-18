@@ -7,11 +7,13 @@ module EventMachine
     module Redis
       include EM::Deferrable
 
+      attr_accessor :auto_reconnect, :reconnect_on_error
+
       ##
       # constants
       #########################
 
-      OK      = "OK".freeze
+      OK       = "OK".freeze
       MINUS    = "-".freeze
       PLUS     = "+".freeze
       COLON    = ":".freeze
@@ -191,6 +193,26 @@ module EventMachine
         end
       end
 
+      def subscribe(channel, proc=nil, &blk)
+        @subscribe_callbacks ||= Hash.new([])
+        @subscribe_callbacks[channel] += [(proc || blk)]
+        call_command(['subscribe', channel], &blk)
+      end
+
+      def unsubscribe(channel=nil, &blk)
+        @subscribe_callbacks ||= Hash.new([])
+        argv = ["unsubscribe"]
+        if channel
+          @subscribe_callbacks[channel] = [blk]
+          argv << channel
+        else
+          @subscribe_callbacks.each_key do |key|
+            @subscribe_callbacks[key] = [blk]
+          end
+        end
+        callback { send_command(argv) }
+      end
+
       # Ruby defines a now deprecated type method so we need to override it here
       # since it will never hit method_missing
       def type(key, &blk)
@@ -356,7 +378,7 @@ module EventMachine
 
       def auth_and_select_db
         # auth and select go to the front of the line
-        callbacks = @callbacks
+        callbacks = @callbacks || []
         @callbacks = []
         call_command(["auth", @password]) if @password
         call_command(["select", @db]) unless @db == 0
@@ -366,12 +388,12 @@ module EventMachine
 
       def connection_completed
         @logger.debug { "Connected to #{@host}:#{@port}" } if @logger
-        @reconnect_callbacks[:after].call if @reconnecting
         @redis_callbacks = []
         @multibulk_n     = false
-        @reconnecting    = false
         @connected       = true
         auth_and_select_db
+        @reconnect_callbacks[:after].call if @reconnecting
+        @reconnecting = false
         succeed
       end
 
@@ -451,6 +473,15 @@ module EventMachine
           end
         end
 
+        if @subscribe_callbacks && value.is_a?(Array)
+          if %w[message unsubscribe].include?(value[0])
+            @subscribe_callbacks[value[1]].each do |blk|
+              blk.call(*value) if blk
+            end
+            return
+          end
+        end
+
         callback = @redis_callbacks.shift
         if callback.kind_of?(Array) && callback.length == 2
           processor, blk = callback
@@ -478,6 +509,15 @@ module EventMachine
         @connected || false
       end
 
+      def reconnect!
+        @reconnect_callbacks[:before].call unless @reconnecting
+        @reconnecting = true
+        EM.add_timer(1) do
+          @logger.debug { "Reconnecting to #{@host}:#{@port}" } if @logger
+          reconnect(@host, @port)
+        end
+      end
+
       def close
         @closing = true
         close_connection_after_writing
@@ -488,12 +528,7 @@ module EventMachine
         if @closing
           @reconnecting = false
         elsif ((@connected || @reconnecting) && @auto_reconnect) || @reconnect_on_error
-          @reconnect_callbacks[:before].call unless @reconnecting
-          @reconnecting = true
-          EM.add_timer(1) do
-            @logger.debug { "Reconnecting to #{@host}:#{@port}" } if @logger
-            reconnect @host, @port
-          end
+          reconnect!
         elsif @connected
           error ConnectionError, 'connection closed'
         else
