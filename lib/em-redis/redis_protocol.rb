@@ -116,7 +116,6 @@ module EventMachine
         "list_remove"          => "lrem",
         "index"                => "lindex",
         "trim"                 => "ltrim",
-        "list_range"           => "lrange",
         "range"                => "lrange",
         "list_len"             => "llen",
         "len"                  => "llen",
@@ -130,7 +129,6 @@ module EventMachine
         "member?"              => "sismember",
         "intersect"            => "sinter",
         "intersect_and_store"  => "sinterstore",
-        "members"              => "smembers",
         "exists?"              => "exists"
       }
 
